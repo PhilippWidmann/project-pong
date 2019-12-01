@@ -198,7 +198,7 @@ try:
                     s_tensor = np.array(s_val, float).reshape((1, input_channels, input_size, input_size))
                     s_tensor = torch.as_tensor(s_tensor, device = AVAILABLE_DEVICE).float()
                     a = policy_net.forward(s_tensor).argmax().item()
-                s1, r, done, _ = env.step(a)
+                s1, r, done, _ = val_env.step(a)
                 val_episode_reward += r
                 val_episode_it += 1
                 s_val = s1
@@ -209,7 +209,7 @@ try:
                     val_durations_sec.append(time.time()-val_episode_starttime)
                     val_episode_reward, val_episode_it, val_episode_starttime = 0, 0, time.time()
                     k += 1
-                    s = env.reset()
+                    s_val = val_env.reset()
             print("%d: Validation over %d episodes completed with mean reward %d in %5.2f iterations on average." % 
                     (i+1, k, np.mean(val_rewards[-k:]), np.mean(val_durations_it[-k:])))
 
@@ -269,7 +269,7 @@ try:
             s_tensor = np.array(s_val, float).reshape((1, input_channels, input_size, input_size))
             s_tensor = torch.as_tensor(s_tensor, device = AVAILABLE_DEVICE).float()
             a = policy_net.forward(s_tensor).argmax().item()
-        s1, r, done, _ = env.step(a)
+        s1, r, done, _ = val_env.step(a)
         val_episode_reward += r
         val_episode_it += 1
         s_val = s1
@@ -280,7 +280,7 @@ try:
             val_durations_sec.append(time.time()-val_episode_starttime)
             val_episode_reward, val_episode_it, val_episode_starttime = 0, 0, time.time()
             k += 1
-            s = env.reset()
+            s_val = val_env.reset()
 
 except KeyboardInterrupt:
     print('Testing interrupted early.')    
