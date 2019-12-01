@@ -2,16 +2,8 @@ import torch
 import gym
 import time
 import numpy as np
-from network import wrap_dqn, ReplayBuffer, DQN, DQN_Conv
-
-use_gpu = True
-
-if torch.cuda.is_available() and use_gpu:
-    available_device = torch.device('cuda')
-    print("Using cuda")
-else:
-    available_device = torch.device('cpu')
-    print("Using cpu")
+from network import ReplayBuffer, DQN, DQN_Conv, AVAILABLE_DEVICE
+from wrappers import wrap_dqn
 
 policy_net_path = "./runs/pong-policy.pt"
 target_net_path = "./runs/pong-target.pt"
@@ -26,12 +18,12 @@ input_size = env.observation_space.shape[1]
 n_output = env.action_space.n
 
 print("Loading saved networks from file")
-policy_net = DQN_Conv(input_channels, input_size, n_output, learning_rate).to(available_device)
-target_net = DQN_Conv(input_channels, input_size, n_output, learning_rate).to(available_device)
+policy_net = DQN_Conv(input_channels, input_size, n_output, learning_rate).to(AVAILABLE_DEVICE)
+target_net = DQN_Conv(input_channels, input_size, n_output, learning_rate).to(AVAILABLE_DEVICE)
 target_net.load_state_dict(policy_net.state_dict())
 
-policy_net.load_state_dict(torch.load(policy_net_path, map_location=available_device))
-target_net.load_state_dict(torch.load(target_net_path, map_location=available_device))
+policy_net.load_state_dict(torch.load(policy_net_path, map_location=AVAILABLE_DEVICE))
+target_net.load_state_dict(torch.load(target_net_path, map_location=AVAILABLE_DEVICE))
 print("Done.")
 
 try:
@@ -45,7 +37,7 @@ try:
         time.sleep(0.01)
         with torch.no_grad():
             s_tensor = np.array(s, float).reshape((1, input_channels, input_size, input_size))
-            s_tensor = torch.as_tensor(s_tensor, device = available_device).float()
+            s_tensor = torch.as_tensor(s_tensor, device = AVAILABLE_DEVICE).float()
             a = policy_net.forward(s_tensor).argmax().item()
         s1, r, done, _ = env.step(a)
         episode_reward += r
