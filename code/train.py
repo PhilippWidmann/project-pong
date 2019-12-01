@@ -61,7 +61,7 @@ target_update_frequency = 1000
 
 validation_frequency = 50000
 validation_count = 10
-save_frequency = 100000
+save_frequency = 25000
 do_validation = True
 
 
