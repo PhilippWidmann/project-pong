@@ -15,7 +15,7 @@ from wrappers import wrap_dqn
 
 ########## Process input arguments and prepare save file ##########
 parser = argparse.ArgumentParser(description='Train a neural network for Pong.')
-parser.add_argument('-s', '--seed', help='Set the random seed for training')
+parser.add_argument('-s', '--seed', help='Set the random seed for training', type=int)
 parser.add_argument('--load_networks', help = 'Load the networks ./policy-net.pt and ./target-net.pt', action='store_true')
 args = parser.parse_args()
 
