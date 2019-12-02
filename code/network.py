@@ -105,8 +105,8 @@ class DQN_Conv(nn.Module):
         )
 
         self.optimizer = optim.Adam(self.parameters(), lr=learning_rate)
-        self.loss_fct = nn.SmoothL1Loss()
-        #self.loss_fct = nn.MSELoss()
+        #self.loss_fct = nn.SmoothL1Loss()
+        self.loss_fct = nn.MSELoss()
     
     def loss(self, q_outputs, q_targets):
         return self.loss_fct(q_outputs.float(), q_targets.float())

@@ -139,9 +139,9 @@ try:
         q_policy = Q[range(len(aa)), aa]
         
         with torch.no_grad():
-            #q_target = rr + gamma * target_net.forward(ss1).max(dim=1)[0] * (~ ddone)
-            aa1 = policy_net.forward(ss1).argmax(dim=1)
-            q_target = rr + gamma * target_net.forward(ss1)[range(len(aa1)), aa1] * (~ ddone)
+            q_target = rr + gamma * target_net.forward(ss1).max(dim=1)[0] * (~ ddone)
+            #aa1 = policy_net.forward(ss1).argmax(dim=1)
+            #q_target = rr + gamma * target_net.forward(ss1)[range(len(aa1)), aa1] * (~ ddone)
             
         loss = policy_net.loss(q_policy, q_target)
         loss.backward()
