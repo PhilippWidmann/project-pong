@@ -53,9 +53,9 @@ learning_rate = 0.0001
 gamma = 0.99
 replay_buffer_capacity = 100000
 replay_init_size = 10000
-epsilon = 1.0
+epsilon = 0.9
 epsilon_final = 0.02
-epsilon_final_reached = 100000
+epsilon_final_reached = 90000
 epsilon_decay = (epsilon - epsilon_final)/epsilon_final_reached
 target_update_frequency = 1000
 
