@@ -2,11 +2,16 @@ import torch
 import gym
 import time
 import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
 from network import ReplayBuffer, DQN, DQN_Conv, AVAILABLE_DEVICE
 from wrappers import wrap_dqn
 
-policy_net_path = "./runs/pong-policy.pt"
-target_net_path = "./runs/pong-target.pt"
+render_env = True
+show_input = False
+
+policy_net_path = "./runs/550000_policy-net.pt"
+target_net_path = "./runs/550000_target-net.pt"
 
 print("Create environment.")
 env = gym.make("PongNoFrameskip-v4")
@@ -26,20 +31,45 @@ policy_net.load_state_dict(torch.load(policy_net_path, map_location=AVAILABLE_DE
 target_net.load_state_dict(torch.load(target_net_path, map_location=AVAILABLE_DEVICE))
 print("Done.")
 
+
+def draw_preprocessed_input(s):
+    image = np.zeros((168, 168))
+    image[0:84, 0:84] = s[3]
+    image[84:168, 0:84] = s[2]
+    image[0:84, 84:168] = s[1]
+    image[84:168, 84:168] = s[0]
+    image = np.transpose(image)
+    plt.imshow(image, cmap='gray')
+    plt.draw()
+    plt.pause(0.001)
+    #input("Press [enter] to continue.")
+
+if(show_input):
+    plt.figure(figsize=(2, 2))
+    plt.axis('off')
+    plt.ion()
+    plt.show()
+
 try:
     print("\nRunning tests")
     test_rewards, test_duration = [], []
     episode_reward, episode_it = 0, 0
     s = env.reset()
-    k, nr_tests = 0, 10
+    k, nr_tests = 0, 100
+    it = 0
     while k < nr_tests:
-        env.render()
-        time.sleep(0.01)
+        if(render_env):
+            env.render()
+            time.sleep(0.01)
         with torch.no_grad():
             s_tensor = np.array(s, float).reshape((1, input_channels, input_size, input_size))
             s_tensor = torch.as_tensor(s_tensor, device = AVAILABLE_DEVICE).float()
-            a = policy_net.forward(s_tensor).argmax().item()
+            quality = policy_net.forward(s_tensor)
+            a = quality.argmax().item()
         s1, r, done, _ = env.step(a)
+        if(show_input and it % 50 == 0):
+            print(quality)
+            draw_preprocessed_input(np.array(s))
         episode_reward += r
         episode_it += 1
         s = s1
@@ -50,6 +80,7 @@ try:
             done = False
             k += 1
             s = env.reset()
+    it = it + 1
 except KeyboardInterrupt:
     print('Testing interrupted early.')    
 
