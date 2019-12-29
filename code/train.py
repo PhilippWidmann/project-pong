@@ -136,7 +136,7 @@ try:
         
         policy_net.optimizer.zero_grad()
         Q = policy_net.forward(ss)
-        q_policy = Q[range(len(aa)), aa]
+        q_policy = Q[range(len(aa)), aa.long()]
         
         with torch.no_grad():
             q_target = rr + gamma * target_net.forward(ss1).max(dim=1)[0] * (~ ddone)
