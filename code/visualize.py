@@ -10,8 +10,8 @@ from wrappers import wrap_dqn
 render_env = True
 show_input = False
 
-policy_net_path = "./runs/550000_policy-net.pt"
-target_net_path = "./runs/550000_target-net.pt"
+policy_net_path = "./runs/visualize_policy-net.pt"
+target_net_path = "./runs/visualize_target-net.pt"
 
 print("Create environment.")
 env = gym.make("PongNoFrameskip-v4")
