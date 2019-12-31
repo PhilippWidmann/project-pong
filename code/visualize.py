@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from network import ReplayBuffer, DQN, DQN_Conv, AVAILABLE_DEVICE
-from wrappers import wrap_dqn
+from wrappers import wrap_dqn_standard
 
 render_env = True
 show_input = False
@@ -14,8 +14,7 @@ policy_net_path = "./runs/visualize_policy-net.pt"
 target_net_path = "./runs/visualize_target-net.pt"
 
 print("Create environment.")
-env = gym.make("PongNoFrameskip-v4")
-env = wrap_dqn(env)
+env = wrap_dqn_standard(gym.make("PongDeterministic-v4"))
 
 learning_rate = 0.0001
 input_channels = env.observation_space.shape[0]
@@ -30,7 +29,6 @@ target_net.load_state_dict(policy_net.state_dict())
 policy_net.load_state_dict(torch.load(policy_net_path, map_location=AVAILABLE_DEVICE))
 target_net.load_state_dict(torch.load(target_net_path, map_location=AVAILABLE_DEVICE))
 print("Done.")
-
 
 def draw_preprocessed_input(s):
     image = np.zeros((168, 168))
@@ -62,8 +60,8 @@ try:
             env.render()
             time.sleep(0.01)
         with torch.no_grad():
-            s_tensor = np.array(s, float).reshape((1, input_channels, input_size, input_size))
-            s_tensor = torch.as_tensor(s_tensor, device = AVAILABLE_DEVICE).float()
+            s_tensor = s.reshape((1, input_channels, input_size, input_size))
+            s_tensor = torch.as_tensor(s_tensor, device = AVAILABLE_DEVICE)
             quality = policy_net.forward(s_tensor)
             a = quality.argmax().item()
         s1, r, done, _ = env.step(a)

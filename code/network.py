@@ -127,7 +127,7 @@ class DQN_Conv(nn.Module):
         conv_0_size = (input_size-kernels[0])/strides[0] + 1
         conv_1_size = (conv_0_size-kernels[1])/strides[1] + 1
         conv_2_size = (conv_1_size-kernels[2])/strides[2] + 1
-        assert(conv_2_size.is_integer())
+        assert conv_2_size.is_integer()
         conv_out_count = channels[2] * int(conv_2_size)**2
 
         self.lin = nn.Sequential(
@@ -137,8 +137,8 @@ class DQN_Conv(nn.Module):
         )
 
         self.optimizer = optim.Adam(self.parameters(), lr=learning_rate)
-        #self.loss_fct = nn.SmoothL1Loss()
-        self.loss_fct = nn.MSELoss()
+        self.loss_fct = nn.SmoothL1Loss()
+        #self.loss_fct = nn.MSELoss()
     
     def loss(self, q_outputs, q_targets):
         return self.loss_fct(q_outputs.float(), q_targets.float())

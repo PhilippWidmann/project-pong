@@ -29,8 +29,8 @@ except FileExistsError:
 
 
 ########## Setup environment ##########
-env = wrap_dqn_standard(gym.make("Pong-v4"))
-val_env = wrap_dqn_standard(gym.make("Pong-v4"))
+env = wrap_dqn_standard(gym.make("PongDeterministic-v4"))
+val_env = wrap_dqn_standard(gym.make("PongDeterministic-v4"))
 
 # Set seeds
 if(args.seed != None):
@@ -52,17 +52,17 @@ batch_size = 32
 learning_rate = 0.0001
 gamma = 0.99
 replay_buffer_capacity = 100000
-replay_init_size = 10000
+replay_init_size = 50000
 epsilon = 1.0
-epsilon_final = 0.02
-epsilon_final_reached = 150000
+epsilon_final = 0.01
+epsilon_final_reached = 100000
 epsilon_decay = (epsilon - epsilon_final)/epsilon_final_reached
 target_update_frequency = 1000
 
-validation_frequency = 50000
+save_frequency = 50000
+do_validation = False
+validation_frequency = 100000
 validation_count = 10
-save_frequency = 25000
-do_validation = True
 
 
 
@@ -86,7 +86,7 @@ if(args.load_networks):
     print("Loading saved networks from file")
     policy_net.load_state_dict(torch.load('policy-net.pt'))
     target_net.load_state_dict(torch.load('target-net.pt'))
-    epsilon = 0.02 #No gradually decreasing epsilon in the middle of training
+    epsilon = epsilon_final #No gradually decreasing epsilon for a pretrained network
 
     # We have a (somewhat) working net already -> Use network to prefill buffer
     for i in range(replay_init_size):
