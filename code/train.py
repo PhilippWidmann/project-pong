@@ -8,8 +8,8 @@ import csv
 import argparse
 import os
 
-from network import ReplayBuffer, DQN, DQN_Conv, AVAILABLE_DEVICE
-from wrappers import wrap_dqn
+from network import ReplayBuffer, ReplayBufferGPU, DQN, DQN_Conv, AVAILABLE_DEVICE
+from wrappers import wrap_dqn, wrap_dqn_standard
 
 
 
@@ -29,8 +29,8 @@ except FileExistsError:
 
 
 ########## Setup environment ##########
-env = wrap_dqn(gym.make("PongNoFrameskip-v4"))
-val_env = wrap_dqn(gym.make("PongNoFrameskip-v4"))
+env = wrap_dqn_standard(gym.make("Pong-v4"))
+val_env = wrap_dqn_standard(gym.make("Pong-v4"))
 
 # Set seeds
 if(args.seed != None):
@@ -53,9 +53,9 @@ learning_rate = 0.0001
 gamma = 0.99
 replay_buffer_capacity = 100000
 replay_init_size = 10000
-epsilon = 0.9
+epsilon = 1.0
 epsilon_final = 0.02
-epsilon_final_reached = 90000
+epsilon_final_reached = 150000
 epsilon_decay = (epsilon - epsilon_final)/epsilon_final_reached
 target_update_frequency = 1000
 
@@ -78,18 +78,21 @@ target_net.load_state_dict(policy_net.state_dict())
 
 
 ########## Prefill replay buffer ##########
+print("Prefilling replay buffer")
+replay_buffer = ReplayBufferGPU(replay_buffer_capacity, env.observation_space.shape)
+s = env.reset()
+
 if(args.load_networks):
     print("Loading saved networks from file")
     policy_net.load_state_dict(torch.load('policy-net.pt'))
     target_net.load_state_dict(torch.load('target-net.pt'))
+    epsilon = 0.02 #No gradually decreasing epsilon in the middle of training
 
     # We have a (somewhat) working net already -> Use network to prefill buffer
-    print("Prefilling replay buffer")
-    replay_buffer = ReplayBuffer(replay_buffer_capacity)
-    s = env.reset()
     for i in range(replay_init_size):
         with torch.no_grad():
-            s_tensor = torch.as_tensor(s, device = AVAILABLE_DEVICE).float()
+            s_tensor = np.array(s, float).reshape((1, input_channels, input_size, input_size))
+            s_tensor = torch.as_tensor(s_tensor, device = AVAILABLE_DEVICE).float()
             a = policy_net.forward(s_tensor).argmax().item()
         s1, r, done, _ = env.step(a)
         replay_buffer.add([s,a,s1,r,done])
@@ -99,9 +102,6 @@ if(args.load_networks):
             done = False
 else:
     # Prefill the replay buffer randomly
-    print("Prefilling replay buffer")
-    replay_buffer = ReplayBuffer(replay_buffer_capacity)
-    s = env.reset()
     for i in range(replay_init_size):
         a = env.action_space.sample()
         s1, r, done, _ = env.step(a)
@@ -127,13 +127,8 @@ try:
     for i in range(num_iterations):
         final_iteration = i
         # Do one gradient step
-        batch = replay_buffer.sample(batch_size)
-        ss = torch.as_tensor(batch[0], device = AVAILABLE_DEVICE).float()
-        aa = torch.as_tensor(batch[1], device = AVAILABLE_DEVICE)
-        ss1 = torch.as_tensor(batch[2], device = AVAILABLE_DEVICE).float()
-        rr = torch.as_tensor(batch[3], device = AVAILABLE_DEVICE)
-        ddone = torch.as_tensor(batch[4], device = AVAILABLE_DEVICE)
-        
+        ss, aa, ss1, rr, ddone = replay_buffer.sample(batch_size)
+
         policy_net.optimizer.zero_grad()
         Q = policy_net.forward(ss)
         q_policy = Q[range(len(aa)), aa.long()]

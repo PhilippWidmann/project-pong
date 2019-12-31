@@ -135,10 +135,6 @@ class LazyFrames(object):
 class FrameStack(gym.Wrapper):
     def __init__(self, env, k):
         """Stack k last frames.
-        Returns lazy array, which is much more memory efficient.
-        See Also
-        --------
-        baselines.common.atari_wrappers.LazyFrames
         """
         gym.Wrapper.__init__(self, env)
         self.k = k
@@ -159,7 +155,7 @@ class FrameStack(gym.Wrapper):
 
     def _get_ob(self):
         assert len(self.frames) == self.k
-        return LazyFrames(list(self.frames))
+        return np.concatenate(self.frames, axis=0)
 
 
 class ScaledFloatFrame(gym.ObservationWrapper):
@@ -182,6 +178,25 @@ class ImageToPyTorch(gym.ObservationWrapper):
     def observation(self, observation):
         return np.swapaxes(observation, 2, 0)
 
+class PongSimplifiedActions(gym.ActionWrapper):
+    """
+    Remove duplicates in action_space and reduce to "Noop, Up, Down"
+    """
+    def __init__(self, env):
+        super(PongSimplifiedActions, self).__init__(env)
+        self.action_space = gym.spaces.Discrete(3)
+    
+    def action(self, act):
+        if(act == 0):
+            return 0 #Noop
+        elif(act == 1):
+            return 2 #Up
+        elif(act == 2):
+            return 3 #Down
+        else:
+            raise ValueError("PongSimplifiedActions allows only actions 0, 1 or 2")
+
+
 
 def wrap_dqn(env, stack_frames=4, reward_clipping=True):
     """Apply a common set of wrappers for Atari games."""
@@ -195,4 +210,12 @@ def wrap_dqn(env, stack_frames=4, reward_clipping=True):
     env = FrameStack(env, stack_frames)
     if reward_clipping:
         env = ClippedRewardsWrapper(env)
+    return env
+
+def wrap_dqn_standard(env, stack_frames=4):
+    env = PongSimplifiedActions(env)
+    env = NoopResetEnv(env, noop_max=30)
+    env = ProcessFrame84(env)
+    env = ImageToPyTorch(env)
+    env = FrameStack(env, stack_frames)
     return env

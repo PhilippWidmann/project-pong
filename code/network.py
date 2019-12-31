@@ -31,6 +31,38 @@ class ReplayBuffer(object):
         
     def count(self):
         return len(self.buffer)
+
+class ReplayBufferGPU(object):
+    def __init__(self, capacity, state_shape):
+        self.count = 0
+        self.next_insert = 0
+        self.capacity = capacity
+        
+        self.ss = torch.zeros((capacity, *state_shape), dtype=torch.uint8, device = AVAILABLE_DEVICE)
+        self.ss1 = torch.zeros((capacity, *state_shape), dtype=torch.uint8, device = AVAILABLE_DEVICE)
+        self.aa = torch.zeros((capacity), dtype=torch.uint8, device = AVAILABLE_DEVICE)
+        self.rr = torch.zeros((capacity), dtype=torch.int8, device = AVAILABLE_DEVICE)
+        self.ddone = torch.zeros((capacity), dtype=torch.bool, device = AVAILABLE_DEVICE)
+        
+    def sample(self, k):
+        sample_ind = torch.zeros((k), dtype = torch.int64, device=AVAILABLE_DEVICE)
+        sample_ind.random_(0, self.count)
+        return self.ss[sample_ind], self.aa[sample_ind], self.ss1[sample_ind], self.rr[sample_ind], self.ddone[sample_ind]
+
+    def add_at(self, new_sample, i):
+        self.ss[i] = torch.from_numpy(new_sample[0])
+        self.aa[i] = new_sample[1]
+        self.ss1[i] = torch.from_numpy(new_sample[2])
+        self.rr[i] = new_sample[3]
+        self.ddone[i] = new_sample[4]
+
+    def add(self, new_sample):
+        self.add_at(new_sample, self.next_insert)
+        self.next_insert +=1
+        if(self.next_insert == self.capacity):
+            self.next_insert = 0
+        if(self.count < self.capacity):
+            self.count += 1
     
 class DQN(nn.Module):
     def __init__(self, n_input, n_hidden_1, n_hidden_2, n_hidden_3, n_output, learning_rate):
