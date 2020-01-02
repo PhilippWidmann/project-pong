@@ -17,6 +17,7 @@ from wrappers import wrap_dqn, wrap_dqn_standard
 parser = argparse.ArgumentParser(description='Train a neural network for Pong.')
 parser.add_argument('-s', '--seed', help='Set the random seed for training', type=int)
 parser.add_argument('--load_networks', help = 'Load the networks ./policy-net.pt and ./target-net.pt', action='store_true')
+parser.add_argument('--ddqn', help = 'Use Double DQN extension', action='store_true')
 args = parser.parse_args()
 
 SAVE_FOLDER = "runs/pong_" + datetime.now().strftime("%Y-%m-%d_%H-%M") + "/"
@@ -26,7 +27,8 @@ except FileExistsError:
     # directory already exists
     pass
 
-
+if(args.ddqn):
+    print("Using Double DQN.")
 
 ########## Setup environment ##########
 env = wrap_dqn_standard(gym.make("PongDeterministic-v4"))
@@ -34,6 +36,7 @@ val_env = wrap_dqn_standard(gym.make("PongDeterministic-v4"))
 
 # Set seeds
 if(args.seed != None):
+    print("Random seed set to ", args.seed)
     np.random.seed(args.seed)
     random.seed(args.seed)
     env.seed(args.seed)
@@ -134,9 +137,11 @@ try:
         q_policy = Q[range(len(aa)), aa.long()]
         
         with torch.no_grad():
-            q_target = rr + gamma * target_net.forward(ss1).max(dim=1)[0] * (~ ddone)
-            #aa1 = policy_net.forward(ss1).argmax(dim=1)
-            #q_target = rr + gamma * target_net.forward(ss1)[range(len(aa1)), aa1] * (~ ddone)
+            if(args.ddqn):
+                aa1 = policy_net.forward(ss1).argmax(dim=1)
+                q_target = rr + gamma * target_net.forward(ss1)[range(len(aa1)), aa1] * (~ ddone)
+            else:
+                q_target = rr + gamma * target_net.forward(ss1).max(dim=1)[0] * (~ ddone)
             
         loss = policy_net.loss(q_policy, q_target)
         loss.backward()
