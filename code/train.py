@@ -8,8 +8,8 @@ import csv
 import argparse
 import os
 
-from network import ReplayBuffer, ReplayBufferGPU, DQN, DQN_Conv, AVAILABLE_DEVICE
-from wrappers import wrap_dqn, wrap_dqn_standard
+from network import ReplayBufferGPU, ReplayBufferGPU_Prio, DQN, DQN_Conv, AVAILABLE_DEVICE
+from wrappers import wrap_dqn_standard
 
 
 
@@ -18,6 +18,7 @@ parser = argparse.ArgumentParser(description='Train a neural network for Pong.')
 parser.add_argument('-s', '--seed', help='Set the random seed for training', type=int)
 parser.add_argument('--load_networks', help = 'Load the networks ./policy-net.pt and ./target-net.pt', action='store_true')
 parser.add_argument('--ddqn', help = 'Use Double DQN extension', action='store_true')
+parser.add_argument('--prio_replay', help = 'Use prioritized experience replay extension', action='store_true')
 args = parser.parse_args()
 
 SAVE_FOLDER = "runs/pong_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "/"
@@ -28,7 +29,10 @@ except FileExistsError:
     pass
 
 if(args.ddqn):
-    print("Using Double DQN.")
+    print("Using Double DQN")
+
+if(args.prio_replay):
+    print("Using Prioritized Experience Replay.")
 
 ########## Setup environment ##########
 env = wrap_dqn_standard(gym.make("PongDeterministic-v4"))
@@ -82,7 +86,10 @@ target_net.load_state_dict(policy_net.state_dict())
 
 ########## Prefill replay buffer ##########
 print("Prefilling replay buffer")
-replay_buffer = ReplayBufferGPU(replay_buffer_capacity, env.observation_space.shape)
+if args.prio_replay:
+    replay_buffer = ReplayBufferGPU_Prio(replay_buffer_capacity, env.observation_space.shape)
+else:
+    replay_buffer = ReplayBufferGPU(replay_buffer_capacity, env.observation_space.shape)
 s = env.reset()
 
 if(args.load_networks):
@@ -142,7 +149,11 @@ try:
                 q_target = rr + gamma * target_net.forward(ss1)[range(len(aa1)), aa1] * (~ ddone)
             else:
                 q_target = rr + gamma * target_net.forward(ss1).max(dim=1)[0] * (~ ddone)
-            
+        
+        if args.prio_replay:
+            new_prio = (torch.abs(q_target - q_policy))**0.6
+            replay_buffer.update_prio(new_prio)
+
         loss = policy_net.loss(q_policy, q_target)
         loss.backward()
         policy_net.optimizer.step()
@@ -175,7 +186,7 @@ try:
         if(done):
             done = False
             s = env.reset()
-            
+
             completed_at.append(i+1)
             rewards.append(episode_reward)
             losses.append(episode_loss)
