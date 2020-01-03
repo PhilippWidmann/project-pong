@@ -20,7 +20,7 @@ parser.add_argument('--load_networks', help = 'Load the networks ./policy-net.pt
 parser.add_argument('--ddqn', help = 'Use Double DQN extension', action='store_true')
 args = parser.parse_args()
 
-SAVE_FOLDER = "runs/pong_" + datetime.now().strftime("%Y-%m-%d_%H-%M") + "/"
+SAVE_FOLDER = "runs/pong_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "/"
 try:
     os.makedirs(SAVE_FOLDER)
 except FileExistsError:
