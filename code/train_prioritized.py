@@ -130,7 +130,7 @@ try:
     for i in range(num_iterations):
         final_iteration = i
         # Do one gradient step
-        ss, aa, ss1, rr, ddone, sample_ind = replay_buffer_prio.sample(batch_size)
+        ss, aa, ss1, rr, ddone = replay_buffer_prio.sample(batch_size)
 
         policy_net.optimizer.zero_grad()
         Q = policy_net.forward(ss)
@@ -144,7 +144,7 @@ try:
                 q_target = rr + gamma * target_net.forward(ss1).max(dim=1)[0] * (~ ddone)
         
         new_prio = (torch.abs(q_target - q_policy))**0.6
-        replay_buffer_prio.update_prio(sample_ind, new_prio)
+        replay_buffer_prio.update_prio(new_prio)
         loss = policy_net.loss(q_policy, q_target)
         loss.backward()
         policy_net.optimizer.step()

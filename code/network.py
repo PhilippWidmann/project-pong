@@ -71,7 +71,7 @@ class ReplayBufferGPU(object):
 
 
 class ReplayBufferGPU_Prio(object):
-    def __init__(self, capacity, state_shape, min_prio = 1E-12):
+    def __init__(self, capacity, state_shape, min_prio = 1E-12, k = 32):
         self.count = 0
         self.next_insert = 0
         self.capacity = capacity
@@ -83,14 +83,16 @@ class ReplayBufferGPU_Prio(object):
         self.rr = torch.zeros((capacity), dtype=torch.int8, device = AVAILABLE_DEVICE)
         self.ddone = torch.zeros((capacity), dtype=torch.bool, device = AVAILABLE_DEVICE)
         self.prio = torch.zeros((capacity), dtype = torch.float32, device = AVAILABLE_DEVICE)
+        self.last_sample_ind = torch.zeros((k), dtype = torch.int64, device=AVAILABLE_DEVICE)
         
     def sample(self, k):
-        m = torch.distributions.multinomial.Multinomial(1, probs = self.prio)
-        sample_ind = m.sample((k,)).argmax(dim=1)
-        return self.ss[sample_ind], self.aa[sample_ind], self.ss1[sample_ind], self.rr[sample_ind], self.ddone[sample_ind], sample_ind
+        if k != len(self.last_sample_ind):
+            self.last_sample_ind = torch.zeros((k), dtype = torch.int64, device=AVAILABLE_DEVICE)
+        self.last_sample_ind = torch.distributions.multinomial.Multinomial(1, probs = self.prio).sample((k,)).argmax(dim=1)
+        return self.ss[self.last_sample_ind], self.aa[self.last_sample_ind], self.ss1[self.last_sample_ind], self.rr[self.last_sample_ind], self.ddone[self.last_sample_ind]
     
-    def update_prio(self, sample_ind, new_prio):
-        self.prio[sample_ind] = new_prio + self.min_prio
+    def update_prio(self, new_prio):
+        self.prio[self.last_sample_ind] = new_prio + self.min_prio
 
     def add_at(self, new_sample, i):
         self.ss[i] = torch.from_numpy(new_sample[0])
