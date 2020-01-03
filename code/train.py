@@ -8,7 +8,7 @@ import csv
 import argparse
 import os
 
-from network import ReplayBufferGPU, ReplayBufferGPU_Prio, DQN, DQN_Conv, AVAILABLE_DEVICE
+from network import ReplayBufferGPU, ReplayBufferGPU_Prio, DQN_Conv, AVAILABLE_DEVICE
 from wrappers import wrap_dqn_standard
 
 
