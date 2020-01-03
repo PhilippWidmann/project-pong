@@ -34,7 +34,7 @@ class ReplayBuffer(object):
     def count(self):
         return len(self.buffer)
 
-        
+
 
 class ReplayBufferGPU(object):
     def __init__(self, capacity, state_shape):
@@ -85,8 +85,8 @@ class ReplayBufferGPU_Prio(object):
         self.prio = torch.zeros((capacity), dtype = torch.float32, device = AVAILABLE_DEVICE)
         
     def sample(self, k):
-        sample_ind = torch.zeros((k), dtype = torch.int64, device=AVAILABLE_DEVICE)
-        sample_ind.random_(0, self.count)
+        m = torch.distributions.multinomial.Multinomial(1, probs = self.prio)
+        sample_ind = m.sample((k,)).argmax(dim=1)
         return self.ss[sample_ind], self.aa[sample_ind], self.ss1[sample_ind], self.rr[sample_ind], self.ddone[sample_ind], sample_ind
     
     def update_prio(self, sample_ind, new_prio):
