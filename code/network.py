@@ -90,7 +90,7 @@ class ReplayBufferGPU_Prio(object):
         return self.ss[sample_ind], self.aa[sample_ind], self.ss1[sample_ind], self.rr[sample_ind], self.ddone[sample_ind], sample_ind
     
     def update_prio(self, sample_ind, new_prio):
-        self.prio[sample_ind] = new_prio
+        self.prio[sample_ind] = new_prio + self.min_prio
 
     def add_at(self, new_sample, i):
         self.ss[i] = torch.from_numpy(new_sample[0])
